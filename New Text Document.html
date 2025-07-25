@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Image to Roblox Part Code</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    canvas { display: none; }
+    textarea { width: 100%; height: 300px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Image to Roblox Part Generator</h2>
+  <input type="file" id="imgInput" accept="image/*"><br><br>
+  <label for="resolution">Resolution (pixels):</label>
+  <input type="number" id="resolution" value="32" min="1" max="100"><br><br>
+  <button onclick="processImage()">Generate Code</button>
+  <canvas id="canvas"></canvas>
+  <textarea id="codeOutput" placeholder="Generated code will appear here..."></textarea>
+
+  <script>
+    function processImage() {
+      const file = document.getElementById('imgInput').files[0];
+      const resolution = parseInt(document.getElementById('resolution').value);
+      if (!file || isNaN(resolution)) return alert("Please upload an image and set resolution.");
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.getElementById("canvas");
+          const ctx = canvas.getContext("2d");
+          canvas.width = resolution;
+          canvas.height = resolution;
+          ctx.drawImage(img, 0, 0, resolution, resolution);
+          const imageData = ctx.getImageData(0, 0, resolution, resolution).data;
+          
+          let luaCode = `local model = Instance.new("Model")\nmodel.Name = "PixelArt"\nmodel.Parent = workspace\n`;
+          const size = 1;
+          for (let y = 0; y < resolution; y++) {
+            for (let x = 0; x < resolution; x++) {
+              const index = (y * resolution + x) * 4;
+              const [r, g, b, a] = imageData.slice(index, index + 4);
+              if (a < 10) continue; // Skip transparent
+
+              luaCode += `do\n  local p = Instance.new("Part")\n  p.Anchored = true\n  p.Size = Vector3.new(${size}, ${size}, ${size})\n  p.Position = Vector3.new(${x * size}, ${-y * size}, 0)\n  p.Color = Color3.fromRGB(${r}, ${g}, ${b})\n  p.Parent = model\nend\n`;
+            }
+          }
+          document.getElementById("codeOutput").value = luaCode;
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  </script>
+</body>
+</html>
